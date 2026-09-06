@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { useGLTF } from '@react-three/drei'
 import SceneCanvas from '../three/SceneCanvas'
 import { BONES } from '../three/bonePose'
+import { MODEL_URL } from '../three/model'
 
 const HIGHLIGHT_COLOR = '#ff5a36'
 
@@ -12,7 +13,7 @@ const HIGHLIGHT_COLOR = '#ff5a36'
 // Tried first because it needs zero knowledge of the base mesh's UV layout -
 // see the report for why this beat a texture-overlay attempt.
 function DermatomeHighlight({ visible }) {
-  const { scene, nodes } = useGLTF('/models/CesiumMan.glb')
+  const { scene, nodes } = useGLTF(MODEL_URL)
   const groupsRef = useRef([])
 
   useEffect(() => {
@@ -28,16 +29,19 @@ function DermatomeHighlight({ visible }) {
     })
 
     // Lateral shin (outer lower leg): capsule hugging the outside of the shin bone.
-    const shinGeo = new THREE.CapsuleGeometry(0.05, 0.22, 4, 8)
+    // This rig's bones use identity bind rotations (local axes == world axes
+    // at rest: +Y down the bone chain), unlike the previous two models, so
+    // no compensating rotation is needed here - just a small lateral (X) offset.
+    const shinGeo = new THREE.CapsuleGeometry(0.035, 0.2, 4, 8)
     const shinMesh = new THREE.Mesh(shinGeo, material)
-    shinMesh.position.set(0.07, -0.14, 0.02)
-    shinMesh.rotation.z = Math.PI / 2
+    shinMesh.position.set(0.05, -0.2, 0)
     shin.add(shinMesh)
 
-    // Dorsum of foot: flattened box over the top of the foot bone.
-    const footGeo = new THREE.BoxGeometry(0.08, 0.22, 0.09)
+    // Dorsum of foot: flattened box over the top of the foot bone (foot
+    // extends forward along local -Z from the ankle on this rig).
+    const footGeo = new THREE.BoxGeometry(0.05, 0.02, 0.12)
     const footMesh = new THREE.Mesh(footGeo, material.clone())
-    footMesh.position.set(0.02, -0.08, 0.02)
+    footMesh.position.set(0.02, -0.02, -0.055)
     foot.add(footMesh)
 
     groupsRef.current = [
@@ -61,7 +65,7 @@ function DermatomeHighlight({ visible }) {
     })
   }, [visible])
 
-  return <primitive object={scene} />
+  return <primitive object={scene} rotation={[0, Math.PI, 0]} />
 }
 
 export default function Demo4Dermatome() {
@@ -89,4 +93,4 @@ export default function Demo4Dermatome() {
   )
 }
 
-useGLTF.preload('/models/CesiumMan.glb')
+useGLTF.preload(MODEL_URL)

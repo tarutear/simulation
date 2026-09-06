@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import SceneCanvas from '../three/SceneCanvas'
 import { BONES, captureRestPose, applyBlendedPose, deg } from '../three/bonePose'
+import { MODEL_URL } from '../three/model'
 
 const POSE_BONES = [BONES.pelvis, BONES.lumbar, BONES.thoracic]
 
@@ -18,12 +19,12 @@ const NEUTRAL_POSE = {
 // lumbar extension.
 const LIST_POSTURE_POSE = {
   [BONES.pelvis]: [0, 0, 0],
-  [BONES.lumbar]: [deg(-4), 0, deg(22)],
-  [BONES.thoracic]: [0, 0, deg(16)],
+  [BONES.lumbar]: [deg(-4), 0, deg(28)],
+  [BONES.thoracic]: [0, 0, deg(20)],
 }
 
 function PosedModel({ target }) {
-  const { scene, nodes } = useGLTF('/models/CesiumMan.glb')
+  const { scene, nodes } = useGLTF(MODEL_URL)
   const restRef = useRef(null)
   const blendRef = useRef(0)
 
@@ -38,7 +39,7 @@ function PosedModel({ target }) {
     applyBlendedPose(nodes, restRef.current, NEUTRAL_POSE, LIST_POSTURE_POSE, blendRef.current)
   })
 
-  return <primitive object={scene} />
+  return <primitive object={scene} rotation={[0, Math.PI, 0]} />
 }
 
 export default function Demo3StaticPosture() {
@@ -67,4 +68,4 @@ export default function Demo3StaticPosture() {
   )
 }
 
-useGLTF.preload('/models/CesiumMan.glb')
+useGLTF.preload(MODEL_URL)

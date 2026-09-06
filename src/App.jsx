@@ -3,6 +3,7 @@ import Demo1Viewer from './demos/Demo1Viewer'
 import Demo2HipLumbar from './demos/Demo2HipLumbar'
 import Demo3StaticPosture from './demos/Demo3StaticPosture'
 import Demo4Dermatome from './demos/Demo4Dermatome'
+import { MODEL_CREDIT } from './three/model'
 import './App.css'
 
 const TABS = [
@@ -37,6 +38,7 @@ export default function App() {
           <Active />
         </Suspense>
       </main>
+      <footer className="app-footer">{MODEL_CREDIT}</footer>
     </div>
   )
 }

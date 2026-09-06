@@ -1,17 +1,21 @@
 import * as THREE from 'three'
 
-// CesiumMan (KhronosGroup/glTF-Sample-Assets) skeleton joint names.
-// Confirmed by inspecting the glb's node graph directly.
+// "Victoria Rubin" VRoid sample avatar skeleton joint names, read from the
+// VRM 0.x "humanoid" bone map embedded in the file (extensions.VRM.humanoid
+// .humanBones), which is at least as detailed as a Mixamo rig (separate
+// hips/spine/chest/upperChest/neck/head, full per-side leg chains including
+// toes, plus full finger chains we don't need here).
 export const BONES = {
-  pelvis: 'Skeleton_torso_joint_1', // root of spine + both legs
-  lumbar: 'Skeleton_torso_joint_2', // lower spine segment
-  thoracic: 'torso_joint_3', // upper spine segment
-  hipL: 'leg_joint_L_1',
-  kneeL: 'leg_joint_L_2',
-  ankleL: 'leg_joint_L_3',
-  hipR: 'leg_joint_R_1',
-  kneeR: 'leg_joint_R_2',
-  ankleR: 'leg_joint_R_3',
+  pelvis: 'J_Bip_C_Hips',
+  lumbar: 'J_Bip_C_Spine', // lower spine segment
+  thoracic: 'J_Bip_C_Chest', // upper spine segment
+  hipL: 'J_Bip_L_UpperLeg',
+  kneeL: 'J_Bip_L_LowerLeg',
+  ankleL: 'J_Bip_L_Foot',
+  toeL: 'J_Bip_L_ToeBase',
+  hipR: 'J_Bip_R_UpperLeg',
+  kneeR: 'J_Bip_R_LowerLeg',
+  ankleR: 'J_Bip_R_Foot',
 }
 
 // Captures each bone's bind-pose quaternion once, so poses can always be

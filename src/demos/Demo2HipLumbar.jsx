@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useGLTF } from '@react-three/drei'
 import SceneCanvas from '../three/SceneCanvas'
 import { BONES, captureRestPose, applyBlendedPose, deg } from '../three/bonePose'
+import { MODEL_URL, MODEL_CREDIT } from '../three/model'
 
 const POSE_BONES = [BONES.pelvis, BONES.lumbar, BONES.thoracic, BONES.hipL, BONES.hipR]
 
@@ -36,7 +37,7 @@ function compensatedPose(t) {
 }
 
 function PosedModel({ t }) {
-  const { scene, nodes } = useGLTF('/models/CesiumMan.glb')
+  const { scene, nodes } = useGLTF(MODEL_URL)
   const restRef = useRef(null)
 
   useEffect(() => {
@@ -47,7 +48,7 @@ function PosedModel({ t }) {
     applyBlendedPose(nodes, restRef.current, normalPose(t), compensatedPose(t), t)
   }
 
-  return <primitive object={scene} />
+  return <primitive object={scene} rotation={[0, Math.PI, 0]} />
 }
 
 export default function Demo2HipLumbar() {
@@ -95,4 +96,4 @@ export default function Demo2HipLumbar() {
   )
 }
 
-useGLTF.preload('/models/CesiumMan.glb')
+useGLTF.preload(MODEL_URL)
