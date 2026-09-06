@@ -1,0 +1,170 @@
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #0b0c10;
+  color: #e7e9ee;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.app-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #23262f;
+  background: #14161c;
+}
+
+.app-header h1 {
+  font-size: 15px;
+  margin: 0 0 10px;
+  color: #9aa4b2;
+  font-weight: 500;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  background: #1c1f27;
+  color: #c7cbd4;
+  border: 1px solid #2a2e39;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.tab.active {
+  background: #3d6cff;
+  border-color: #3d6cff;
+  color: white;
+}
+
+.app-main {
+  flex: 1;
+  min-height: 0;
+}
+
+.demo {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  height: 100%;
+}
+
+@media (max-width: 720px) {
+  .demo {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+}
+
+.demo-info {
+  padding: 18px;
+  overflow-y: auto;
+  border-right: 1px solid #23262f;
+  background: #14161c;
+}
+
+.demo-info h2 {
+  font-size: 16px;
+  margin-top: 0;
+}
+
+.demo-info p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #b7bcc6;
+}
+
+.demo-info code {
+  background: #23262f;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  margin: 14px 0 10px;
+}
+
+.slider-row input[type='range'] {
+  flex: 1;
+}
+
+.slider-row span {
+  min-width: 28px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.badge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.badge.ok {
+  background: #143d2b;
+  color: #57e0a0;
+}
+
+.badge.warn {
+  background: #453410;
+  color: #f2c14e;
+}
+
+.badge.bad {
+  background: #45161b;
+  color: #ff8a8a;
+}
+
+.legend {
+  font-size: 12px;
+  color: #9aa4b2;
+  line-height: 1.7;
+  padding-left: 18px;
+}
+
+.toggle-btn {
+  background: #2a2e39;
+  color: #e7e9ee;
+  border: 1px solid #3a3f4d;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+
+.toggle-btn:hover {
+  background: #343946;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #9aa4b2;
+}
