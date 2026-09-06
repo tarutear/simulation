@@ -260,9 +260,20 @@ const BONES = {
   kneeL: 'J_Bip_L_LowerLeg',
   ankleL: 'J_Bip_L_Foot',
   hipR: 'J_Bip_R_UpperLeg',
+  armL: 'J_Bip_L_UpperArm',
+  armR: 'J_Bip_R_UpperArm',
 };
 
 const deg = (d) => (d * Math.PI) / 180;
+
+// VRM 0.x mandates a T-pose bind (arms out horizontally) for every avatar,
+// so a relaxed standing patient needs the upper arms rotated down to the
+// sides explicitly - see src/three/bonePose.js for the full rationale.
+const ARM_BONES = [BONES.armL, BONES.armR];
+const ARMS_DOWN_POSE = {
+  [BONES.armL]: [0, 0, deg(80)],
+  [BONES.armR]: [0, 0, -deg(80)],
+};
 
 function findBoneNodes(root, names) {
   const map = {};
@@ -282,6 +293,18 @@ function captureRestPose(nodes, boneNames) {
 
 const _q = new THREE.Quaternion();
 const _e = new THREE.Euler();
+
+function applyPose(nodes, restPose, pose) {
+  for (const name in pose) {
+    const bone = nodes[name];
+    const rest = restPose[name];
+    if (!bone || !rest) continue;
+    const [x, y, z] = pose[name];
+    _e.set(x, y, z);
+    _q.setFromEuler(_e);
+    bone.quaternion.copy(rest).multiply(_q);
+  }
+}
 
 function applyBlendedPose(nodes, restPose, poseA, poseB, t) {
   const qa = new THREE.Quaternion();
@@ -340,6 +363,8 @@ new ResizeObserver(resize).observe(document.getElementById('viewport'));
 function buildModelInstance() {
   const inst = cloneSkeleton(baseModel);
   inst.rotation.y = Math.PI; // VRM avatars are authored facing -Z
+  const armNodes = findBoneNodes(inst, ARM_BONES);
+  applyPose(armNodes, captureRestPose(armNodes, ARM_BONES), ARMS_DOWN_POSE);
   return inst;
 }
 

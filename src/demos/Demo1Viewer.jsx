@@ -1,9 +1,19 @@
+import { useRef, useEffect } from 'react'
 import { useGLTF } from '@react-three/drei'
 import SceneCanvas from '../three/SceneCanvas'
 import { MODEL_URL, MODEL_CREDIT } from '../three/model'
+import { useClonedModel } from '../three/useClonedModel'
+import { ARM_BONES, ARMS_DOWN_POSE, captureRestPose, applyPose } from '../three/bonePose'
 
 function Model() {
-  const { scene } = useGLTF(MODEL_URL)
+  const { scene, nodes } = useClonedModel(MODEL_URL)
+  const restRef = useRef(null)
+
+  useEffect(() => {
+    restRef.current = captureRestPose(nodes, ARM_BONES)
+    applyPose(nodes, restRef.current, ARMS_DOWN_POSE)
+  }, [nodes])
+
   // VRM avatars are authored facing -Z; rotate to face the camera (+Z).
   return <primitive object={scene} position={[0, 0, 0]} rotation={[0, Math.PI, 0]} />
 }

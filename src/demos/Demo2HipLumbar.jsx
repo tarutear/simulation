@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { useGLTF } from '@react-three/drei'
 import SceneCanvas from '../three/SceneCanvas'
-import { BONES, captureRestPose, applyBlendedPose, deg } from '../three/bonePose'
+import { BONES, ARM_BONES, ARMS_DOWN_POSE, captureRestPose, applyPose, applyBlendedPose, deg } from '../three/bonePose'
 import { MODEL_URL, MODEL_CREDIT } from '../three/model'
+import { useClonedModel } from '../three/useClonedModel'
 
 const POSE_BONES = [BONES.pelvis, BONES.lumbar, BONES.thoracic, BONES.hipL, BONES.hipR]
 
@@ -37,11 +38,12 @@ function compensatedPose(t) {
 }
 
 function PosedModel({ t }) {
-  const { scene, nodes } = useGLTF(MODEL_URL)
+  const { scene, nodes } = useClonedModel(MODEL_URL)
   const restRef = useRef(null)
 
   useEffect(() => {
     restRef.current = captureRestPose(nodes, POSE_BONES)
+    applyPose(nodes, captureRestPose(nodes, ARM_BONES), ARMS_DOWN_POSE)
   }, [nodes])
 
   if (restRef.current) {

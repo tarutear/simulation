@@ -88,6 +88,43 @@ GitHub(`madjin/vrm-samples`)에 CC0/VRM Public License로 공개된 VRoid
 
 본 이름 매핑은 `src/three/bonePose.js`의 `BONES` 상수 하나에 모여있어서, 모델을 바꿀 때 이 파일만 고치면 됩니다(실제로 CesiumMan → Seed-san → Victoria Rubin 세 번 교체하면서 이 구조 덕에 데모 코드 자체는 거의 손대지 않았습니다).
 
+## 후속 수정: T-pose 자연스러운 자세로, 탭 간 포즈 오염 버그
+
+모델 교체 후 리뷰에서 "아바타가 팔을 벌리고 있어서(T-pose) 환자가 서 있는
+모습으로는 어색하다"는 피드백을 받아 두 가지를 고쳤습니다.
+
+1. **팔을 자연스럽게 내리는 포즈 추가.** VRM 0.x 스펙은 모든 아바타의 bind
+   pose를 T-pose(양팔을 수평으로 벌린 자세)로 강제합니다 — 이건 이
+   모델만의 문제가 아니라, 확인해본 다른 VRM 샘플(Vita, Vivi,
+   Sendagaya_Shino 등) 전부 동일했습니다. 즉 **다른 아바타로 바꿔도 이
+   문제는 그대로 남습니다.** 그래서 아바타를 바꾸는 대신, 어깨(upper
+   arm) 본을 코드에서 좌우 각각 80° 회전시켜 팔이 몸통 옆으로 자연스럽게
+   내려오도록 고정 포즈를 추가했습니다(`src/three/bonePose.js`의
+   `ARMS_DOWN_POSE`). 네 데모 전부에 적용되어 있습니다.
+2. **탭을 전환하면 이전 탭의 포즈가 다음 탭에 그대로 남아있는 버그
+   발견 및 수정.** drei의 `useGLTF`는 같은 URL이면 파싱 결과(본
+   객체들까지)를 캐시해서 재사용하는데, 이 프로젝트의 4개 데모가 전부
+   `useGLTF(MODEL_URL)`을 직접 썼기 때문에 **사실은 같은 스켈레톤
+   인스턴스를 공유**하고 있었습니다. 그 상태에서 각 데모가 마운트 시점의
+   본 회전값을 "bind pose"로 캡처해버리면, 이전 탭이 이미 구부려놓은
+   자세를 기준으로 새 회전을 또 얹는 식으로 포즈가 누적됐습니다(팔을 편
+   버그를 고치려다 발견한, 그전부터 있었던 잠재 버그입니다). 고관절-요추
+   데모를 100%까지 밀어놓고 다른 탭으로 이동하면 재현이 확인됐습니다.
+   해결책은 `src/three/useClonedModel.js` — `three/addons/utils/
+   SkeletonUtils.js`의 스켈레톤 인식 clone으로 데모마다 독립된 본
+   계층을 만들어주는 훅입니다. 웹 테스트용 vanilla Three.js 아티팩트는
+   처음부터 데모별로 `SkeletonUtils.clone`을 썼기 때문에 이 버그가
+   없었습니다 — 오히려 그 구조를 React 쪽에도 그대로 가져와 맞췄습니다.
+
+**다른 샘플 아바타도 있습니다.** `madjin/vrm-samples` 저장소에는 Victoria
+Rubin 외에도 CC0 라이선스인 `Vita`, `Vivi`, `Sendagaya_Shino`가 더
+있고(전부 동일한 VRoid 리그, 액세서리 없는 평범한 몸), "Other" 라이선스
+(재배포 조건이 불명확해 보류)인 공식 VRoid 샘플 `AvatarSample_A/B/C`와
+`masc_vroid`/`fem_vroid`도 있습니다. 다만 위에서 설명했듯 전부 T-pose
+bind라서, 아바타를 바꾸는 것만으로는 팔 문제가 해결되지 않습니다. 다른
+외모가 필요하면 알려주세요 — `BONES` 상수만 바꾸면 되는 구조라 교체
+자체는 빠릅니다.
+
 ## 결과 리포트
 
 ### 1) 데모별 난이도

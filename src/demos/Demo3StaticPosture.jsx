@@ -2,8 +2,9 @@ import { useState, useRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import SceneCanvas from '../three/SceneCanvas'
-import { BONES, captureRestPose, applyBlendedPose, deg } from '../three/bonePose'
+import { BONES, ARM_BONES, ARMS_DOWN_POSE, captureRestPose, applyPose, applyBlendedPose, deg } from '../three/bonePose'
 import { MODEL_URL } from '../three/model'
+import { useClonedModel } from '../three/useClonedModel'
 
 const POSE_BONES = [BONES.pelvis, BONES.lumbar, BONES.thoracic]
 
@@ -24,12 +25,13 @@ const LIST_POSTURE_POSE = {
 }
 
 function PosedModel({ target }) {
-  const { scene, nodes } = useGLTF(MODEL_URL)
+  const { scene, nodes } = useClonedModel(MODEL_URL)
   const restRef = useRef(null)
   const blendRef = useRef(0)
 
   useEffect(() => {
     restRef.current = captureRestPose(nodes, POSE_BONES)
+    applyPose(nodes, captureRestPose(nodes, ARM_BONES), ARMS_DOWN_POSE)
   }, [nodes])
 
   useFrame((_, delta) => {

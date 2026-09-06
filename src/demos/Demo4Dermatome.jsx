@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { useGLTF } from '@react-three/drei'
 import SceneCanvas from '../three/SceneCanvas'
-import { BONES } from '../three/bonePose'
+import { BONES, ARM_BONES, ARMS_DOWN_POSE, captureRestPose, applyPose } from '../three/bonePose'
 import { MODEL_URL } from '../three/model'
+import { useClonedModel } from '../three/useClonedModel'
 
 const HIGHLIGHT_COLOR = '#ff5a36'
 
@@ -13,13 +14,15 @@ const HIGHLIGHT_COLOR = '#ff5a36'
 // Tried first because it needs zero knowledge of the base mesh's UV layout -
 // see the report for why this beat a texture-overlay attempt.
 function DermatomeHighlight({ visible }) {
-  const { scene, nodes } = useGLTF(MODEL_URL)
+  const { scene, nodes } = useClonedModel(MODEL_URL)
   const groupsRef = useRef([])
 
   useEffect(() => {
     const shin = nodes[BONES.kneeL]
     const foot = nodes[BONES.ankleL]
     if (!shin || !foot) return
+
+    applyPose(nodes, captureRestPose(nodes, ARM_BONES), ARMS_DOWN_POSE)
 
     const material = new THREE.MeshBasicMaterial({
       color: HIGHLIGHT_COLOR,
