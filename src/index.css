@@ -1,8 +1,55 @@
 :root {
-  color-scheme: dark;
+  --bg: #eef1f4;
+  --surface: #ffffff;
+  --surface-2: #f4f6f8;
+  --border: #dfe4ea;
+  --border-strong: #c7cfd8;
+  --text: #1b2430;
+  --muted: #5b6673;
+  --accent: #0f766e;
+  --accent-ink: #0b5c56;
+  --accent-soft: #e2f2ef;
+  --ok: #15803d;
+  --ok-soft: #e6f4ea;
+  --warn: #b45309;
+  --warn-soft: #fdf1e2;
+  --bad: #b91c1c;
+  --bad-soft: #fde9e9;
+  --font:
+    'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo',
+    'Noto Sans KR', 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  color-scheme: light;
 }
 
 * {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
   margin: 0;
-  padding: 0;
+}
+
+body {
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

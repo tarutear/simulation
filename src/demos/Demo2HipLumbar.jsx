@@ -1,101 +1,143 @@
-import { useState, useRef, useEffect } from 'react'
-import { useGLTF } from '@react-three/drei'
-import SceneCanvas from '../three/SceneCanvas'
-import { BONES, ARM_BONES, ARMS_DOWN_POSE, captureRestPose, applyPose, applyBlendedPose, deg } from '../three/bonePose'
-import { MODEL_URL, MODEL_CREDIT } from '../three/model'
-import { useClonedModel } from '../three/useClonedModel'
+import { useEffect, useState } from 'react'
+import { store } from '../state/store'
+import { hipFlexionPose } from '../three/poses'
 
-const POSE_BONES = [BONES.pelvis, BONES.lumbar, BONES.thoracic, BONES.hipL, BONES.hipR]
+const fmt = (v) => `${Math.round(v)}°`
 
-// Two joint-angle profiles, each expressed as a function of flexion progress t (0-1).
-// The slider itself is also used as the slerp blend weight between them, so the
-// compensation share visibly grows the further the "hip flexion" is pushed -
-// this is the exact behaviour the spike needed to validate: can a single
-// rigged glTF skeleton be pose-blended smoothly with plain quaternion slerp.
-function normalPose(t) {
-  const hip = -deg(90) * t
-  return {
-    [BONES.hipL]: [hip, 0, 0],
-    [BONES.hipR]: [hip, 0, 0],
-    [BONES.lumbar]: [0, 0, 0],
-    [BONES.thoracic]: [0, 0, 0],
-    [BONES.pelvis]: [0, 0, 0],
-  }
-}
-
-function compensatedPose(t) {
-  const hip = -deg(45) * t
-  const lumbar = -deg(35) * t
-  const thoracic = -deg(12) * t
-  const pelvisTilt = deg(18) * t
-  return {
-    [BONES.hipL]: [hip, 0, 0],
-    [BONES.hipR]: [hip, 0, 0],
-    [BONES.lumbar]: [lumbar, 0, 0],
-    [BONES.thoracic]: [thoracic, 0, 0],
-    [BONES.pelvis]: [pelvisTilt, 0, 0],
-  }
-}
-
-function PosedModel({ t }) {
-  const { scene, nodes } = useClonedModel(MODEL_URL)
-  const restRef = useRef(null)
+export function Demo2HipLumbar() {
+  const [flex, setFlex] = useState(60)
+  const [blend, setBlend] = useState(100)
+  const [playing, setPlaying] = useState(false)
 
   useEffect(() => {
-    restRef.current = captureRestPose(nodes, POSE_BONES)
-    applyPose(nodes, captureRestPose(nodes, ARM_BONES), ARMS_DOWN_POSE)
-  }, [nodes])
+    store.setState((s) => ({
+      demo: 'hip',
+      plant: 'right', // stance foot stays on the floor while the left leg lifts
+      camera: 'left',
+      demoCamera: 'left',
+      cameraNonce: s.cameraNonce + 1,
+      guides: false,
+      dermatome: 'off',
+      animation: null,
+    }))
+  }, [])
 
-  if (restRef.current) {
-    applyBlendedPose(nodes, restRef.current, normalPose(t), compensatedPose(t), t)
-  }
+  const t = flex / 100
+  const w = blend / 100
+  const { pose, readout } = hipFlexionPose(t, w)
 
-  return <primitive object={scene} rotation={[0, Math.PI, 0]} />
-}
+  useEffect(() => {
+    store.setState({ pose })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flex, blend])
 
-export default function Demo2HipLumbar() {
-  const [value, setValue] = useState(40)
-  const t = value / 100
+  // "재생": sweeps the flexion slider 0 → 100 → 0 every 4 s
+  useEffect(() => {
+    if (!playing) return
+    const start = performance.now()
+    let raf = 0
+    const tick = (now) => {
+      const s = ((now - start) / 2000) % 2
+      setFlex(Math.round((s < 1 ? s : 2 - s) * 100))
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [playing])
 
-  let label = '정상 패턴'
-  if (t > 0.66) label = '뚜렷한 요추 보상'
-  else if (t > 0.33) label = '경도 요추 보상 시작'
+  const status =
+    readout.tilt < 4
+      ? { cls: 'ok', text: '고관절 단독 움직임 — 요추 중립 유지' }
+      : readout.tilt < 12
+        ? { cls: 'warn', text: '경도 보상 — 골반 후방경사 시작' }
+        : { cls: 'bad', text: '뚜렷한 보상 — 골반 후방경사 + 요추 굴곡' }
 
   return (
-    <div className="demo">
-      <div className="demo-info">
-        <h2>데모 2 · 고관절 굴곡 - 요추 보상 패턴</h2>
-        <p>
-          슬라이더가 고관절 굴곡 진행도(0~100)와 동시에 정상↔보상 포즈의
-          블렌드 가중치로 쓰입니다. 각 본의 목표 회전을 오일러 → 쿼터니언으로
-          변환한 뒤 <code>Quaternion.slerp</code>로 두 포즈를 보간하고, 그
-          결과를 bind pose 기준 델타로 적용합니다.
-        </p>
-        <label className="slider-row">
-          고관절 굴곡 각도
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={value}
-            onChange={(e) => setValue(Number(e.target.value))}
-          />
-          <span>{value}</span>
-        </label>
-        <div className={`badge ${t > 0.66 ? 'bad' : t > 0.33 ? 'warn' : 'ok'}`}>
-          {label}
+    <>
+      <p className="eyebrow">Demo 02 · 핵심</p>
+      <h1>고관절 굴곡 – 요추 보상 패턴</h1>
+      <p className="lead">
+        선 자세에서 왼쪽 무릎을 들어 올리는 고관절 굴곡입니다. 정상 패턴은 움직임이 고관절에서만 일어나고
+        요추는 중립을 유지합니다. 보상 패턴은 굴곡이 진행되면서 골반이 후방경사되고 요추가 먼저 굴곡되기
+        시작해, 대퇴가 같은 높이까지 올라가도 실제 고관절 굴곡은 그만큼 작습니다.
+      </p>
+
+      <div className="field">
+        <div className="field-label">
+          <label htmlFor="flex">고관절 굴곡 진행</label>
+          <span className="value">{flex} / 100</span>
         </div>
-        <ul className="legend">
-          <li>고관절(양측): 정상 최대 -90°→ 보상 시 최대 -45°만 기여</li>
-          <li>요추: 정상 0° 유지 → 보상 시 최대 -35° 굴곡</li>
-          <li>골반: 정상 0° → 보상 시 최대 18° 후방경사</li>
-        </ul>
+        <input id="flex" type="range" min={0} max={100} value={flex} onChange={(e) => setFlex(Number(e.target.value))} />
       </div>
-      <SceneCanvas>
-        <PosedModel t={t} />
-      </SceneCanvas>
-    </div>
+      <div className="btn-row">
+        <button type="button" className="btn" onClick={() => setPlaying((p) => !p)}>
+          {playing ? '■ 정지' : '▶ 반복 재생'}
+        </button>
+        <button type="button" className="btn" onClick={() => setFlex(0)}>
+          0으로
+        </button>
+      </div>
+
+      <div className="field">
+        <div className="field-label">
+          <span>패턴</span>
+        </div>
+        <div className="segmented" role="group" aria-label="패턴 선택">
+          <button type="button" className={blend === 0 ? 'active' : ''} onClick={() => setBlend(0)}>
+            정상 — 고관절 단독
+          </button>
+          <button type="button" className={blend === 100 ? 'active' : ''} onClick={() => setBlend(100)}>
+            보상 — 골반·요추 개입
+          </button>
+        </div>
+      </div>
+      <div className="field">
+        <div className="field-label">
+          <label htmlFor="blend">두 패턴 블렌딩 (보상 정도)</label>
+          <span className="value">{blend}%</span>
+        </div>
+        <input id="blend" type="range" min={0} max={100} value={blend} onChange={(e) => setBlend(Number(e.target.value))} />
+      </div>
+
+      <div className={`badge ${status.cls}`}>{status.text}</div>
+
+      <dl className="readout">
+        <dt>대퇴 거상각 (겉보기)</dt>
+        <dd>{fmt(readout.thigh)}</dd>
+        <dt>고관절 굴곡 (대퇴–골반)</dt>
+        <dd>{fmt(readout.hip)}</dd>
+        <dt>골반 후방경사</dt>
+        <dd>{fmt(readout.tilt)}</dd>
+        <dt>요추 굴곡</dt>
+        <dd>{fmt(readout.lumbar)}</dd>
+        <dt>무릎 굴곡</dt>
+        <dd>{fmt(readout.knee)}</dd>
+      </dl>
+
+      <p className="note">
+        측면(좌측면) 시점에서 보세요. 보상 패턴에서는 골반이 뒤로 말리고 허리가 둥글어지며, 지지하는
+        오른발은 바닥에 고정된 채 상체가 그 위에서 움직입니다. 블렌딩 슬라이더로 두 패턴 사이의 중간
+        정도(경도 보상)도 만들 수 있습니다.
+      </p>
+
+      <details className="impl-note">
+        <summary>구현 메모 — 포즈 블렌딩</summary>
+        <ul>
+          <li>
+            각 패턴은 진행도 t의 함수로 정의한 관절각 세트입니다(고관절·무릎·골반경사·요추 2분절·흉추). 두
+            세트를 보상 정도 w로 선형 보간하면 그것이 곧 포즈 블렌딩입니다.
+          </li>
+          <li>
+            관절각은 부모 분절의 해부학적 축(X 시상면, Z 관상면) 기준 델타로 두고, 바인드 포즈에 곱해서
+            적용합니다 — 매 프레임 바인드 포즈에서 다시 계산하므로 값이 누적되거나 탭 간에 새지 않습니다.
+          </li>
+          <li>
+            골반 후방경사 시 지지 다리는 같은 각도만큼 고관절 신전으로 역보정하고, 지지 발 위치는 바인드 위치에
+            고정(planting)합니다.
+          </li>
+          <li>목표 포즈로의 이동은 지수 평활(초당 9)로 부드럽게 처리합니다.</li>
+        </ul>
+      </details>
+    </>
   )
 }
-
-useGLTF.preload(MODEL_URL)

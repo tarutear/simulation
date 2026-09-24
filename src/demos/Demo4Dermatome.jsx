@@ -1,99 +1,88 @@
-import { useState, useEffect, useRef } from 'react'
-import * as THREE from 'three'
-import { useGLTF } from '@react-three/drei'
-import SceneCanvas from '../three/SceneCanvas'
-import { BONES, ARM_BONES, ARMS_DOWN_POSE, captureRestPose, applyPose } from '../three/bonePose'
-import { MODEL_URL } from '../three/model'
-import { useClonedModel } from '../three/useClonedModel'
+import { useEffect } from 'react'
+import { store, useAppState } from '../state/store'
+import { STANDING } from '../three/poses'
 
-const HIGHLIGHT_COLOR = '#ff5a36'
+const MODES = [
+  {
+    id: 'overlay',
+    title: '표면 오버레이 — 정점 마스크',
+    desc: '피부 정점의 skin weight(어느 뼈에 속하는지)와 바인드 위치로 L5 영역을 계산해 두 번째 SkinnedMesh로 그립니다. 피부에 딱 붙고 자세를 바꿔도 따라옵니다.',
+  },
+  {
+    id: 'decal',
+    title: '데칼 — 뼈에 붙인 별도 메시',
+    desc: '캡슐·상자 프리미티브를 정강이뼈·발뼈에 자식으로 붙입니다. 10줄이면 되지만 피부 위에 떠 있고 위치를 손으로 맞춰야 합니다.',
+  },
+  { id: 'off', title: '끄기', desc: '' },
+]
 
-// Decal-mesh approach: small extra meshes parented directly onto the
-// existing skeleton bones (Bone extends Object3D, so bone.add(mesh) just
-// works and the highlight rides along with any pose/animation for free).
-// Tried first because it needs zero knowledge of the base mesh's UV layout -
-// see the report for why this beat a texture-overlay attempt.
-function DermatomeHighlight({ visible }) {
-  const { scene, nodes } = useClonedModel(MODEL_URL)
-  const groupsRef = useRef([])
-
-  useEffect(() => {
-    const shin = nodes[BONES.kneeL]
-    const foot = nodes[BONES.ankleL]
-    if (!shin || !foot) return
-
-    applyPose(nodes, captureRestPose(nodes, ARM_BONES), ARMS_DOWN_POSE)
-
-    const material = new THREE.MeshBasicMaterial({
-      color: HIGHLIGHT_COLOR,
-      transparent: true,
-      opacity: 0.55,
-      depthTest: true,
-    })
-
-    // Lateral shin (outer lower leg): capsule hugging the outside of the shin bone.
-    // This rig's bones use identity bind rotations (local axes == world axes
-    // at rest: +Y down the bone chain), unlike the previous two models, so
-    // no compensating rotation is needed here - just a small lateral (X) offset.
-    const shinGeo = new THREE.CapsuleGeometry(0.035, 0.2, 4, 8)
-    const shinMesh = new THREE.Mesh(shinGeo, material)
-    shinMesh.position.set(0.05, -0.2, 0)
-    shin.add(shinMesh)
-
-    // Dorsum of foot: flattened box over the top of the foot bone (foot
-    // extends forward along local -Z from the ankle on this rig).
-    const footGeo = new THREE.BoxGeometry(0.05, 0.02, 0.12)
-    const footMesh = new THREE.Mesh(footGeo, material.clone())
-    footMesh.position.set(0.02, -0.02, -0.055)
-    foot.add(footMesh)
-
-    groupsRef.current = [
-      { bone: shin, mesh: shinMesh, geo: shinGeo },
-      { bone: foot, mesh: footMesh, geo: footGeo },
-    ]
-
-    return () => {
-      groupsRef.current.forEach(({ bone, mesh, geo }) => {
-        bone.remove(mesh)
-        geo.dispose()
-        mesh.material.dispose()
-      })
-      groupsRef.current = []
-    }
-  }, [nodes])
+export function Demo4Dermatome() {
+  const mode = useAppState((s) => s.dermatome)
 
   useEffect(() => {
-    groupsRef.current.forEach(({ mesh }) => {
-      mesh.visible = visible
-    })
-  }, [visible])
-
-  return <primitive object={scene} rotation={[0, Math.PI, 0]} />
-}
-
-export default function Demo4Dermatome() {
-  const [visible, setVisible] = useState(true)
+    store.setState((s) => ({
+      demo: 'dermatome',
+      pose: STANDING,
+      plant: 'both',
+      camera: 'lowerLeg',
+      demoCamera: 'lowerLeg',
+      cameraNonce: s.cameraNonce + 1,
+      guides: false,
+      dermatome: 'overlay',
+      animation: null,
+    }))
+    return () => store.setState({ dermatome: 'off' })
+  }, [])
 
   return (
-    <div className="demo">
-      <div className="demo-info">
-        <h2>데모 4 · 신체 부위 하이라이트 (L5 피부분절)</h2>
-        <p>
-          좌측 종아리 외측 ~ 발등 영역을 별도의 반투명 메시(decal 방식)로
-          하이라이트. 이 메시들은 <code>bone.add(mesh)</code>로 기존 스켈레톤
-          본에 직접 자식으로 붙어있어, 향후 포즈/애니메이션이 바뀌어도 같이
-          따라 움직입니다.
-        </p>
-        <button className="toggle-btn" onClick={() => setVisible((v) => !v)}>
-          {visible ? '하이라이트 끄기' : '하이라이트 켜기'}
-        </button>
-        <div className="badge warn">텍스처 오버레이 vs 데칼 메시 비교는 리포트 참고</div>
+    <>
+      <p className="eyebrow">Demo 04</p>
+      <h1>신체 부위 하이라이트 — L5 피부분절</h1>
+      <p className="lead">
+        좌측 종아리 외측에서 발등, 엄지~셋째 발가락까지의 L5 피부분절 영역을 색으로 표시합니다. 두 가지 방식을
+        모두 구현해 두었으니 전환해서 비교해 보세요.
+      </p>
+
+      <div className="radio-list" role="radiogroup" aria-label="하이라이트 방식">
+        {MODES.map((m) => (
+          <label key={m.id} className={mode === m.id ? 'active' : ''}>
+            <input
+              type="radio"
+              name="dermatome"
+              value={m.id}
+              checked={mode === m.id}
+              onChange={() => store.setState({ dermatome: m.id })}
+            />
+            <span>
+              <span className="radio-title">{m.title}</span>
+              {m.desc && <span className="radio-desc"> {m.desc}</span>}
+            </span>
+          </label>
+        ))}
       </div>
-      <SceneCanvas cameraPosition={[0.55, 0.55, 1.3]} target={[0.1, 0.35, 0]}>
-        <DermatomeHighlight visible={visible} />
-      </SceneCanvas>
-    </div>
+
+      <p className="note">
+        결론: 더 간단한 쪽은 <strong>데칼</strong>(코드 ~15줄)이지만 결과물은 <strong>표면 오버레이</strong>(~60줄)가 압도적으로
+        낫습니다. 오버레이는 UV 맵이나 텍스처 편집 없이도 skin weight만으로 영역을 정하기 때문에, 텍스처
+        오버레이 방식의 장점(피부에 밀착)을 텍스처 작업 없이 얻습니다.
+      </p>
+
+      <details className="impl-note">
+        <summary>구현 메모</summary>
+        <ul>
+          <li>
+            오버레이: 원본 <code>Beta_Surface</code> 지오메트리를 복제해 RGBA 정점 색(alpha = 소속도)을 넣고, 같은
+            스켈레톤에 <code>bind()</code>한 두 번째 SkinnedMesh를 <code>MeshBasicMaterial(vertexColors, transparent)</code>로
+            그립니다. 소속도 = 정강이 뼈 weight × 외측 각도 창 × 높이 창, 발등 = 발 뼈 weight × 발 축 위쪽 × 내측
+            발가락.
+          </li>
+          <li>진짜 텍스처 페인팅(UV 기반)은 이 모델에 UV/텍스처가 없어 시도하지 않았고, 필요도 없었습니다.</li>
+          <li>
+            three.js의 <code>DecalGeometry</code>(투영 데칼)는 스킨 변형을 따라가지 않아 정적 메시에만 맞습니다 —
+            여기서는 뼈에 붙인 프리미티브로 대신했습니다.
+          </li>
+        </ul>
+      </details>
+    </>
   )
 }
-
-useGLTF.preload(MODEL_URL)

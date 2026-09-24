@@ -1,44 +1,53 @@
-import { useState, Suspense } from 'react'
-import Demo1Viewer from './demos/Demo1Viewer'
-import Demo2HipLumbar from './demos/Demo2HipLumbar'
-import Demo3StaticPosture from './demos/Demo3StaticPosture'
-import Demo4Dermatome from './demos/Demo4Dermatome'
-import { MODEL_CREDIT } from './three/model'
+import { useState } from 'react'
+import { Viewport } from './three/Viewport'
+import { Demo1Viewer } from './demos/Demo1Viewer'
+import { Demo2HipLumbar } from './demos/Demo2HipLumbar'
+import { Demo3Posture } from './demos/Demo3Posture'
+import { Demo4Dermatome } from './demos/Demo4Dermatome'
 import './App.css'
 
-const TABS = [
-  { id: 'demo1', label: '1. 기본 뷰어', Component: Demo1Viewer },
-  { id: 'demo2', label: '2. 고관절-요추 보상', Component: Demo2HipLumbar },
-  { id: 'demo3', label: '3. 정적 자세', Component: Demo3StaticPosture },
-  { id: 'demo4', label: '4. 부위 하이라이트', Component: Demo4Dermatome },
+const DEMOS = [
+  { id: 'viewer', label: '1 · 기본 뷰어', Panel: Demo1Viewer },
+  { id: 'hip', label: '2 · 고관절–요추 보상', Panel: Demo2HipLumbar },
+  { id: 'posture', label: '3 · 정적 자세', Panel: Demo3Posture },
+  { id: 'dermatome', label: '4 · 부위 하이라이트', Panel: Demo4Dermatome },
 ]
 
 export default function App() {
-  const [active, setActive] = useState('demo1')
-  const Active = TABS.find((t) => t.id === active).Component
+  const [active, setActive] = useState('viewer')
+  const { Panel } = DEMOS.find((d) => d.id === active)
 
   return (
     <div className="app">
-      <header className="app-header">
-        <h1>PT 3D 시각화 feasibility spike</h1>
-        <nav className="tabs">
-          {TABS.map((tab) => (
+      <header className="topbar">
+        <div className="brand">
+          <span className="brand-mark">PT</span>
+          <div>
+            <div className="brand-title">3D 시뮬레이션 스파이크</div>
+            <div className="brand-sub">React · react-three-fiber · Mixamo X Bot</div>
+          </div>
+        </div>
+        <nav className="tabs" aria-label="데모">
+          {DEMOS.map((d) => (
             <button
-              key={tab.id}
-              className={tab.id === active ? 'tab active' : 'tab'}
-              onClick={() => setActive(tab.id)}
+              key={d.id}
+              type="button"
+              className={d.id === active ? 'tab active' : 'tab'}
+              aria-pressed={d.id === active}
+              onClick={() => setActive(d.id)}
             >
-              {tab.label}
+              {d.label}
             </button>
           ))}
         </nav>
       </header>
-      <main className="app-main">
-        <Suspense fallback={<div className="loading">모델 로딩 중…</div>}>
-          <Active />
-        </Suspense>
+      <main className="main">
+        {/* One persistent canvas; tabs only swap the side panel and the pose/camera state. */}
+        <Viewport />
+        <aside className="panel" key={active}>
+          <Panel />
+        </aside>
       </main>
-      <footer className="app-footer">{MODEL_CREDIT}</footer>
     </div>
   )
 }
