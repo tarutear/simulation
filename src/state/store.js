@@ -16,6 +16,7 @@ let state = {
   cameraNonce: 0, // bump to re-apply the preset (= "reset view")
   guides: false, // posture guide lines (plumb line, shoulder/pelvis lines)
   dermatome: 'off', // 'off' | 'overlay' | 'decal'
+  spine: false, // vertebra markers (HUD toggle, kept across demos)
   animation: null, // bundled clip name to play instead of the pose, or null
   contextLost: false,
 }

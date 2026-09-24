@@ -57,12 +57,77 @@ let minY = Infinity
 for (const v of V) minY = Math.min(minY, v[1])
 const toM = ([x, y, z]) => [x * SCALE, (y - minY) * SCALE, z * SCALE]
 
+// ---------------------------------------------------- skeleton (metres)
+// name → { parent, head: [x, y, z] }
+const bones = {}
+for (const [n, def] of Object.entries(skel.bones)) bones[n] = { parent: def.parent, head: toM(jointPos(def.head)) }
+
+// ------------------------------------------- vertebra-level spine chain
+// MakeHuman's trunk is 5 spine bones + 3 neck bones. Replace them with one
+// bone per vertebra: L5→L1, T12→T1, C7→C1 (24 bones). Bone "L4" has its head
+// at the L4/L5 disc, so rotating it is motion at the L4–L5 segment; the
+// "head" bone's head is the occipito-atlantal joint.
+//   lumbar   : spine05 head (L5/S1) → spine02 head (T12/L1), equal heights
+//   thoracic : spine02 head → neck01 head (C7/T1), T12 tallest → T1 shortest
+//   cervical : neck01 head → head head (C0/C1), equal heights
+const OLD_CHAIN = ['spine05', 'spine04', 'spine03', 'spine02', 'spine01', 'neck01', 'neck02', 'neck03']
+const REGIONS = [
+  { through: ['spine05', 'spine04', 'spine03', 'spine02'], names: ['L5', 'L4', 'L3', 'L2', 'L1'], rel: [1, 1, 1, 1, 1] },
+  {
+    through: ['spine02', 'spine01', 'neck01'],
+    names: ['T12', 'T11', 'T10', 'T9', 'T8', 'T7', 'T6', 'T5', 'T4', 'T3', 'T2', 'T1'],
+    rel: Array.from({ length: 12 }, (_, i) => 1.3 - (0.5 * i) / 11),
+  },
+  { through: ['neck01', 'neck02', 'neck03', 'head'], names: ['C7', 'C6', 'C5', 'C4', 'C3', 'C2', 'C1'], rel: [1, 1, 1, 1, 1, 1, 1] },
+]
+const lerp3 = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]
+function pointAlong(pts, frac) {
+  // point at `frac` (0..1) of the polyline's arc length
+  const seg = []
+  let total = 0
+  for (let i = 0; i + 1 < pts.length; i++) {
+    const l = Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1], pts[i + 1][2] - pts[i][2])
+    seg.push(l)
+    total += l
+  }
+  let d = frac * total
+  for (let i = 0; i < seg.length; i++) {
+    if (d <= seg[i] || i === seg.length - 1) return lerp3(pts[i], pts[i + 1], Math.min(1, d / seg[i]))
+    d -= seg[i]
+  }
+}
+const chain = [] // [{ name, head }], caudal → cranial
+for (const r of REGIONS) {
+  const pts = r.through.map((n) => bones[n].head)
+  const sum = r.rel.reduce((x, y) => x + y, 0)
+  let acc = 0
+  r.names.forEach((name, i) => {
+    chain.push({ name, head: pointAlong(pts, acc / sum) })
+    acc += r.rel[i]
+  })
+}
+const chainTop = bones.head.head // C0/C1
+const chainHeads = [...chain.map((c) => c.head), chainTop]
+// Which vertebra a point at height y belongs to (for re-parenting)
+const vertebraAt = (y) => {
+  for (let k = chain.length - 1; k >= 0; k--) if (y >= chain[k].head[1]) return chain[k].name
+  return chain[0].name
+}
+const oldParentOf = Object.fromEntries(OLD_CHAIN.map((n) => [n, bones[n].parent]))
+for (const n of OLD_CHAIN) delete bones[n]
+chain.forEach((c, k) => {
+  bones[c.name] = { parent: k === 0 ? oldParentOf.spine05 : chain[k - 1].name, head: c.head }
+})
+for (const [n, b] of Object.entries(bones)) {
+  if (OLD_CHAIN.includes(b.parent)) b.parent = n === 'head' ? 'C1' : vertebraAt(b.head[1])
+}
+
 // Bone order: parents before children (depth-first from the roots).
-const boneNames = Object.keys(skel.bones)
+const boneNames = Object.keys(bones)
 const children = new Map(boneNames.map((n) => [n, []]))
 const roots = []
 for (const n of boneNames) {
-  const p = skel.bones[n].parent
+  const p = bones[n].parent
   if (p) children.get(p).push(n)
   else roots.push(n)
 }
@@ -73,15 +138,35 @@ const walk = (n) => {
 }
 for (const r of roots.sort()) walk(r)
 const boneIndex = new Map(order.map((n, i) => [n, i]))
-const headM = new Map(order.map((n) => [n, toM(jointPos(skel.bones[n].head))]))
+const headM = new Map(order.map((n) => [n, bones[n].head]))
 
 // ------------------------------------------------- per-vertex skin weights
+// Weights on the old trunk bones are summed and handed to the vertebrae by
+// the vertex's bind-pose height: linear blend between the two vertebrae whose
+// mid-heights bracket it, so each segment bends only the skin around it and
+// small per-segment rotations add up to a smooth curve.
+const chainMid = chain.map((c, k) => (chainHeads[k][1] + chainHeads[k + 1][1]) / 2)
+function spreadOverChain(y, w, out) {
+  const n = chain.length
+  if (y <= chainMid[0]) return out.push([boneIndex.get(chain[0].name), w])
+  if (y >= chainMid[n - 1]) return out.push([boneIndex.get(chain[n - 1].name), w])
+  let k = 0
+  while (chainMid[k + 1] < y) k++
+  const t = (y - chainMid[k]) / (chainMid[k + 1] - chainMid[k])
+  out.push([boneIndex.get(chain[k].name), w * (1 - t)], [boneIndex.get(chain[k + 1].name), w * t])
+}
 const perVertex = Array.from({ length: V.length }, () => [])
+const chainWeight = new Float32Array(V.length)
 for (const bone in weights) {
+  if (OLD_CHAIN.includes(bone)) {
+    for (const [vi, w] of weights[bone]) chainWeight[vi] += w
+    continue
+  }
   const bi = boneIndex.get(bone)
   if (bi === undefined) continue
   for (const [vi, w] of weights[bone]) perVertex[vi].push([bi, w])
 }
+for (let vi = 0; vi < V.length; vi++) if (chainWeight[vi] > 0) spreadOverChain(toM(V[vi])[1], chainWeight[vi], perVertex[vi])
 
 // ------------------------------------------------- compact vertex buffers
 // Separate primitives for body and eyes, each with only the vertices it uses.
@@ -244,7 +329,7 @@ const nodes = [
   { name: 'Eyes', mesh: 1, skin: 0 },
 ]
 for (const n of order) {
-  const p = skel.bones[n].parent
+  const p = bones[n].parent
   const h = headM.get(n)
   const ph = p ? headM.get(p) : [0, 0, 0]
   // three.js's GLTFLoader strips '.' from node names, so use '_' up front

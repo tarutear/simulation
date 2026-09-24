@@ -5,8 +5,8 @@ export const MODEL_URL = `${import.meta.env.BASE_URL}models/MakeHuman.glb`
 
 export const MODEL_INFO = {
   name: 'MakeHuman 기본 인체',
-  source: 'MakeHuman 1.x 기본 메시 + 기본 스켈레톤 + 스킨 가중치(CC0) — scripts/build-makehuman.mjs로 glTF 변환',
-  bones: 163,
+  source: 'MakeHuman 1.x 기본 메시 + 기본 스켈레톤 + 스킨 가중치(CC0) — scripts/build-makehuman.mjs로 glTF 변환, 척추를 24분절로 세분화',
+  bones: 179,
   triangles: 26756,
   size: '0.8 MB',
   clips: [],

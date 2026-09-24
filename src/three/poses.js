@@ -24,13 +24,20 @@ export const RELAXED_ARMS = {
 
 export const STANDING = { ...RELAXED_ARMS }
 
-// Lumbar flexion is shared by the three lumbar segments, most at the bottom;
-// thoracic and cervical counter-extension keep the gaze level.
-const LUMBAR_W = [0.4, 0.35, 0.25]
-const lumbarFlex = (d) => spread(B.lumbar, J.spineFlex(d), LUMBAR_W)
-const lumbarSideBendL = (d) => spread(B.lumbar, J.sideBendL(d), LUMBAR_W)
+// How a regional angle is shared between motion segments (caudal → cranial).
+// Rough proportions from segmental ROM data: lumbar flexion/extension is
+// largest at L4–5 and L5–S1, lumbar side bending at L2–4, cervical motion at
+// C4–6. Thoracic motion is spread evenly.
+export const SEGMENT_W = {
+  lumbarSagittal: [0.24, 0.24, 0.2, 0.17, 0.15], // L5 … L1
+  lumbarFrontal: [0.12, 0.2, 0.24, 0.24, 0.2],
+  cervical: [0.12, 0.17, 0.19, 0.17, 0.14, 0.11, 0.1], // C7 … C1
+}
+const lumbarFlex = (d) => spread(B.lumbar, J.spineFlex(d), SEGMENT_W.lumbarSagittal)
+const lumbarExt = (d) => spread(B.lumbar, J.spineExt(d), SEGMENT_W.lumbarSagittal)
+const lumbarSideBendL = (d) => spread(B.lumbar, J.sideBendL(d), SEGMENT_W.lumbarFrontal)
 const thoracic = (rot) => spread(B.thoracic, rot)
-const cervical = (rot) => spread(B.neck, rot)
+const cervical = (rot) => spread(B.neck, rot, SEGMENT_W.cervical)
 
 // ---------------------------------------------------------------------------
 // Demo 2 — standing left hip flexion (knee lift) with lumbar compensation.
@@ -73,7 +80,7 @@ export function hipFlexionPose(t, w) {
 // ---------------------------------------------------------------------------
 export const POSTURE_NORMAL = merge(
   RELAXED_ARMS,
-  spread(B.lumbar, J.spineExt(4), LUMBAR_W), // a hint of normal lumbar lordosis
+  lumbarExt(4), // a hint of normal lumbar lordosis
   thoracic(J.spineFlex(3)),
   cervical(J.spineFlex(1)),
 )
@@ -97,9 +104,9 @@ export const POSTURE_LIST_LEFT = merge(
 )
 
 export const POSTURE_LIST_READOUT = [
-  ['요추 측굴 (좌, 3분절 합)', '18°'],
-  ['흉추 측굴 (우, 보상)', '9°'],
-  ['경추 측굴 (우, 보상)', '6° + 3°'],
+  ['요추 측굴 (좌, L1–L5 합)', '18°'],
+  ['흉추 측굴 (우, 보상, T1–T12 합)', '9°'],
+  ['경추 측굴 (우, 보상, C1–C7 합) + 두부', '6° + 3°'],
   ['골반 후방경사', '6°'],
-  ['요추 굴곡 (전만 감소)', '9°'],
+  ['요추 굴곡 (전만 감소, L1–L5 합)', '9°'],
 ]

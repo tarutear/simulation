@@ -3,13 +3,15 @@ import * as THREE from 'three'
 // MakeHuman default skeleton (CC0), built by scripts/build-makehuman.mjs.
 // Every bone has an identity rest rotation with its origin at the joint head,
 // and the file already uses '_' instead of '.' ("upperleg01_L"), so runtime
-// names equal these. The spine has five segments: spine05→spine03 span the
-// lumbar region (pelvis to ~L1), spine02/spine01 the thoracic region.
+// names equal these. The converter replaces MakeHuman's 5 spine + 3 neck
+// bones with one bone per vertebra (24). A vertebra bone's head sits at the
+// disc below it, so rotating "L4" is motion at the L4–L5 segment.
+const range = (p, from, to) => Array.from({ length: from - to + 1 }, (_, i) => `${p}${from - i}`)
 export const B = {
   hips: 'root', // pelvis pivot (sacral base)
-  lumbar: ['spine05', 'spine04', 'spine03'], // caudal → cranial
-  thoracic: ['spine02', 'spine01'],
-  neck: ['neck01', 'neck02', 'neck03'],
+  lumbar: range('L', 5, 1), // L5 … L1, caudal → cranial
+  thoracic: range('T', 12, 1), // T12 … T1
+  neck: range('C', 7, 1), // C7 … C1
   head: 'head',
   lShoulder: 'clavicle_L',
   lArm: 'upperarm01_L',

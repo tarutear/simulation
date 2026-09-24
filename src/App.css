@@ -415,6 +415,19 @@ details.impl-note li {
   color: var(--accent-ink);
 }
 
+/* Overlay toggles sit after the view presets, visually separated. */
+.hud-btn.toggle {
+  margin-left: 6px;
+  color: #4338ca;
+  border-color: #c7d2fe;
+}
+
+.hud-btn.toggle.active {
+  background: #4338ca;
+  border-color: #4338ca;
+  color: #fff;
+}
+
 .hud-hint {
   position: absolute;
   left: 12px;

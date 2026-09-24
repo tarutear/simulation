@@ -4,6 +4,7 @@ import { Grid, useProgress } from '@react-three/drei'
 import { Human } from './Human'
 import { Guides } from './Guides'
 import { Dermatome } from './Dermatome'
+import { SpineMarkers } from './SpineMarkers'
 import { CameraRig } from './CameraRig'
 import { CAMERA_PRESETS, HUD_PRESETS } from './cameras'
 import { MODEL_INFO, IS_EMBEDDED } from './model'
@@ -54,6 +55,7 @@ function Ground() {
 function ViewHud() {
   const camera = useAppState((s) => s.camera)
   const demoCamera = useAppState((s) => s.demoCamera)
+  const spine = useAppState((s) => s.spine)
   const setCamera = (key) =>
     store.setState((s) => ({ camera: key, cameraNonce: s.cameraNonce + 1 }))
   return (
@@ -74,6 +76,14 @@ function ViewHud() {
             기본 시점
           </button>
         )}
+        <button
+          type="button"
+          className={spine ? 'hud-btn toggle active' : 'hud-btn toggle'}
+          aria-pressed={spine}
+          onClick={() => store.setState((s) => ({ spine: !s.spine }))}
+        >
+          척추 분절
+        </button>
       </div>
       <div className="hud-hint">드래그 회전 · 휠/핀치 줌 · 우클릭/두 손가락 이동</div>
       <div className="hud-credit">{MODEL_INFO.credit}</div>
@@ -142,6 +152,7 @@ export function Viewport() {
             <Human />
             <Guides />
             <Dermatome />
+            <SpineMarkers />
           </Suspense>
           <CameraRig />
         </Canvas>
