@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Viewport } from './three/Viewport'
+import { CaseFlow } from './case/CaseFlow'
+import { CASE_01 } from './cases/case01'
 import { Demo1Viewer } from './demos/Demo1Viewer'
 import { Demo2HipLumbar } from './demos/Demo2HipLumbar'
 import { Demo3Posture } from './demos/Demo3Posture'
@@ -14,6 +16,7 @@ const DEMOS = [
 ]
 
 export default function App() {
+  const [mode, setMode] = useState('case') // 'case' | 'explore'
   const [active, setActive] = useState('viewer')
   const { Panel } = DEMOS.find((d) => d.id === active)
 
@@ -27,25 +30,35 @@ export default function App() {
             <div className="brand-sub">React · react-three-fiber · Mixamo X Bot</div>
           </div>
         </div>
-        <nav className="tabs" aria-label="데모">
-          {DEMOS.map((d) => (
-            <button
-              key={d.id}
-              type="button"
-              className={d.id === active ? 'tab active' : 'tab'}
-              aria-pressed={d.id === active}
-              onClick={() => setActive(d.id)}
-            >
-              {d.label}
-            </button>
-          ))}
-        </nav>
+        <div className="mode-switch" role="group" aria-label="모드">
+          <button type="button" className={mode === 'case' ? 'active' : ''} onClick={() => setMode('case')}>
+            임상 케이스
+          </button>
+          <button type="button" className={mode === 'explore' ? 'active' : ''} onClick={() => setMode('explore')}>
+            자유 탐색
+          </button>
+        </div>
+        {mode === 'explore' && (
+          <nav className="tabs" aria-label="데모">
+            {DEMOS.map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                className={d.id === active ? 'tab active' : 'tab'}
+                aria-pressed={d.id === active}
+                onClick={() => setActive(d.id)}
+              >
+                {d.label}
+              </button>
+            ))}
+          </nav>
+        )}
       </header>
       <main className="main">
-        {/* One persistent canvas; tabs only swap the side panel and the pose/camera state. */}
+        {/* One persistent canvas; the side panel and store state change per mode/step. */}
         <Viewport />
-        <aside className="panel" key={active}>
-          <Panel />
+        <aside className="panel" key={mode === 'case' ? 'case' : active}>
+          {mode === 'case' ? <CaseFlow caseData={CASE_01} onExplore={() => setMode('explore')} /> : <Panel />}
         </aside>
       </main>
     </div>
