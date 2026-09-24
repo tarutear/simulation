@@ -71,7 +71,7 @@ export function Demo4Dermatome() {
         <summary>구현 메모</summary>
         <ul>
           <li>
-            오버레이: 원본 <code>Beta_Surface</code> 지오메트리를 복제해 RGBA 정점 색(alpha = 소속도)을 넣고, 같은
+            오버레이: 원본 <code>Body</code> 지오메트리를 복제해 RGBA 정점 색(alpha = 소속도)을 넣고, 같은
             스켈레톤에 <code>bind()</code>한 두 번째 SkinnedMesh를 <code>MeshBasicMaterial(vertexColors, transparent)</code>로
             그립니다. 소속도 = 정강이 뼈 weight × 외측 각도 창 × 높이 창, 발등 = 발 뼈 weight × 발 축 위쪽 × 내측
             발가락.

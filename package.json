@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "build:artifact": "node scripts/build-artifact.mjs"
+    "build:artifact": "node scripts/build-artifact.mjs",
+    "build:model": "node scripts/build-makehuman.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",

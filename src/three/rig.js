@@ -1,38 +1,43 @@
 import * as THREE from 'three'
 
-// Mixamo skeleton (Adobe Mixamo "X Bot", redistributed in the three.js
-// examples). The file names bones "mixamorig:Hips" etc., but three.js's
-// GLTFLoader sanitizes node names (PropertyBinding.sanitizeNodeName strips
-// the colon), so at runtime they are "mixamorigHips".
+// MakeHuman default skeleton (CC0), built by scripts/build-makehuman.mjs.
+// Every bone has an identity rest rotation with its origin at the joint head,
+// and the file already uses '_' instead of '.' ("upperleg01_L"), so runtime
+// names equal these. The spine has five segments: spine05→spine03 span the
+// lumbar region (pelvis to ~L1), spine02/spine01 the thoracic region.
 export const B = {
-  hips: 'mixamorigHips',
-  spine: 'mixamorigSpine', // lumbar
-  spine1: 'mixamorigSpine1', // thoracolumbar
-  spine2: 'mixamorigSpine2', // thoracic
-  neck: 'mixamorigNeck',
-  head: 'mixamorigHead',
-  lShoulder: 'mixamorigLeftShoulder',
-  lArm: 'mixamorigLeftArm',
-  lForeArm: 'mixamorigLeftForeArm',
-  lHand: 'mixamorigLeftHand',
-  rShoulder: 'mixamorigRightShoulder',
-  rArm: 'mixamorigRightArm',
-  rForeArm: 'mixamorigRightForeArm',
-  rHand: 'mixamorigRightHand',
-  lUpLeg: 'mixamorigLeftUpLeg',
-  lLeg: 'mixamorigLeftLeg',
-  lFoot: 'mixamorigLeftFoot',
-  lToe: 'mixamorigLeftToeBase',
-  rUpLeg: 'mixamorigRightUpLeg',
-  rLeg: 'mixamorigRightLeg',
-  rFoot: 'mixamorigRightFoot',
-  rToe: 'mixamorigRightToeBase',
+  hips: 'root', // pelvis pivot (sacral base)
+  lumbar: ['spine05', 'spine04', 'spine03'], // caudal → cranial
+  thoracic: ['spine02', 'spine01'],
+  neck: ['neck01', 'neck02', 'neck03'],
+  head: 'head',
+  lShoulder: 'clavicle_L',
+  lArm: 'upperarm01_L',
+  lArm2: 'upperarm02_L',
+  lForeArm: 'lowerarm01_L',
+  lHand: 'wrist_L',
+  rShoulder: 'clavicle_R',
+  rArm: 'upperarm01_R',
+  rArm2: 'upperarm02_R',
+  rForeArm: 'lowerarm01_R',
+  rHand: 'wrist_R',
+  lUpLeg: 'upperleg01_L',
+  lLeg: 'lowerleg01_L', // knee
+  lLeg2: 'lowerleg02_L',
+  lFoot: 'foot_L', // ankle
+  lToe: 'toe2-1_L', // 2nd toe base — defines the ankle→toe axis
+  lToes: ['toe1-1_L', 'toe1-2_L', 'toe2-1_L', 'toe2-2_L', 'toe2-3_L', 'toe3-1_L', 'toe3-2_L', 'toe3-3_L'], // toes 1–3 (L5)
+  rUpLeg: 'upperleg01_R',
+  rLeg: 'lowerleg01_R',
+  rLeg2: 'lowerleg02_R',
+  rFoot: 'foot_R',
+  rToe: 'toe2-1_R',
 }
 
 // ---------------------------------------------------------------------------
 // Joint rotation helpers. Angles are degrees. Each returns a partial
 // {x, y, z} rotation about ANATOMICAL axes expressed in the parent segment's
-// bind-pose frame. For this rig (standing, facing +Z, left side = +X, all bind
+// bind-pose frame. For this rig (standing, facing +Z, left side = +X, all rest
 // rotations identity) those axes coincide with world axes at bind pose:
 //   X = mediolateral   -> sagittal-plane motion (flexion / extension, tilt)
 //   Z = anteroposterior -> frontal-plane motion (side bending, abduction)
@@ -55,10 +60,21 @@ export const J = {
   sideBendR: (d) => ({ z: d }),
   armDownL: (d) => ({ z: -d }),
   armDownR: (d) => ({ z: d }),
-  armFwdL: (d) => ({ y: -d }),
-  armFwdR: (d) => ({ y: d }),
-  elbowFlexL: (d) => ({ y: -d }),
-  elbowFlexR: (d) => ({ y: d }),
+  armFwdL: (d) => ({ x: -d }),
+  armFwdR: (d) => ({ x: -d }),
+  elbowFlexL: (d) => ({ x: -d }),
+  elbowFlexR: (d) => ({ x: -d }),
+}
+
+// Spreads one joint rotation across a chain of segments (e.g. lumbar flexion
+// over spine05→spine03), optionally weighted per segment. Returns pose entries.
+export function spread(names, rot, weights) {
+  const w = weights || names.map(() => 1 / names.length)
+  const out = {}
+  names.forEach((n, i) => {
+    out[n] = { x: (rot.x || 0) * w[i], y: (rot.y || 0) * w[i], z: (rot.z || 0) * w[i] }
+  })
+  return out
 }
 
 export function add(...parts) {

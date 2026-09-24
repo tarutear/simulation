@@ -1,16 +1,16 @@
 import { useGLTF } from '@react-three/drei'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 
-export const MODEL_URL = `${import.meta.env.BASE_URL}models/Xbot.glb`
+export const MODEL_URL = `${import.meta.env.BASE_URL}models/MakeHuman.glb`
 
 export const MODEL_INFO = {
-  name: 'X Bot',
-  source: 'Adobe Mixamo — three.js 예제 저장소(examples/models/gltf/Xbot.glb)에서 가져온 glTF 변환본',
-  bones: 67,
-  triangles: 49112,
-  size: '2.9 MB',
-  clips: ['idle', 'walk', 'run', 'agree', 'headShake', 'sad_pose', 'sneak_pose'],
-  credit: 'Model: X Bot (mixamo.com)',
+  name: 'MakeHuman 기본 인체',
+  source: 'MakeHuman 1.x 기본 메시 + 기본 스켈레톤 + 스킨 가중치(CC0) — scripts/build-makehuman.mjs로 glTF 변환',
+  bones: 163,
+  triangles: 26756,
+  size: '0.8 MB',
+  clips: [],
+  credit: 'Model: MakeHuman base mesh (CC0, makehumancommunity.org)',
 }
 
 // When the whole app is inlined into a single HTML page (see

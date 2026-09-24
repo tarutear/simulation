@@ -24,7 +24,7 @@ const css = fs.readFileSync(path.join(dist, cssPath), 'utf8')
 // "</script" inside the bundle would end the inline tag early; it only ever
 // appears inside string literals, where "<\/script" is the same string.
 const js = fs.readFileSync(path.join(dist, jsPath), 'utf8').replace(/<\/script/gi, '<\\/script')
-const modelB64 = fs.readFileSync(path.join(root, 'public', 'models', 'Xbot.glb')).toString('base64')
+const modelB64 = fs.readFileSync(path.join(root, 'public', 'models', 'MakeHuman.glb')).toString('base64')
 
 const page = `<title>PT 3D 시뮬레이션</title>
 <style>${css}</style>

@@ -27,7 +27,7 @@ export default function App() {
           <span className="brand-mark">PT</span>
           <div>
             <div className="brand-title">3D 시뮬레이션 스파이크</div>
-            <div className="brand-sub">React · react-three-fiber · Mixamo X Bot</div>
+            <div className="brand-sub">React · react-three-fiber · MakeHuman (CC0)</div>
           </div>
         </div>
         <div className="mode-switch" role="group" aria-label="모드">

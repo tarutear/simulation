@@ -6,8 +6,8 @@ import { useHumanModel } from './model'
 import { B, createRig, smoothPose, plantFeet } from './rig'
 import { store } from '../state/store'
 
-// Neutral "clay mannequin" look instead of the asset's own salmon/brown
-// colours — reads as a clinical figure and gives highlights something to pop on.
+// Neutral "clay mannequin" look — reads as a clinical figure and gives
+// highlights something to pop on.
 export const SURFACE_COLOR = '#e5dcd3'
 export const JOINT_COLOR = '#474c56'
 
@@ -26,11 +26,13 @@ export function Human() {
       o.castShadow = true
       o.receiveShadow = false
       o.frustumCulled = false // bounds are computed for the bind pose only
-      const joints = o.name === 'Beta_Joints'
+      const eyes = o.name === 'Eyes'
       o.material = new THREE.MeshStandardMaterial({
-        color: joints ? JOINT_COLOR : SURFACE_COLOR,
-        roughness: joints ? 0.5 : 0.85,
-        metalness: joints ? 0.2 : 0,
+        color: eyes ? JOINT_COLOR : SURFACE_COLOR,
+        // The body carries a COLOR_0 tint (shorts + top) that multiplies the base colour.
+        vertexColors: !eyes && Boolean(o.geometry.attributes.color),
+        roughness: eyes ? 0.4 : 0.85,
+        metalness: 0,
       })
     })
     // Where the feet are in the bind pose (with the character at the origin),
@@ -47,7 +49,7 @@ export function Human() {
     return () => store.setState({ ready: false, rig: null })
   }, [scene, rig])
 
-  // Bundled Mixamo clips (Demo 1). While a clip plays the mixer owns the bones;
+  // Bundled animation clips, if the model has any (Demo 1). While a clip plays the mixer owns the bones;
   // when it stops, the per-frame pose below takes over again from the bind pose.
   const playing = useRef(null)
   useEffect(() => {
